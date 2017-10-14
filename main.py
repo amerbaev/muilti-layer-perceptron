@@ -48,14 +48,14 @@ LEARN_Y = (
 
 N_INPUTS = len(LEARN_X[0])
 N_LAYERS = 1
-N_NEURONS = (10,)
+N_NEURONS = (100,)
 N_OUTPUTS = 1
 
 GLOBAL_W_1 = np.random.rand(N_NEURONS[0], N_INPUTS)
 # GLOBAL_W_2 = np.random.rand(N_NEURONS[1], N_NEURONS[0])
 GLOBAL_W_2 = np.random.rand(N_OUTPUTS, N_NEURONS[-1])
 RATES = [0.1]
-N = 200
+N = 1000
 GLOBAL_ERROR = 1000000
 
 for RATE in RATES:
@@ -78,7 +78,7 @@ for RATE in RATES:
 
             error_1 = np.dot(W_2.transpose(), error) * A_2 * (1 - A_2)  # 3x1
             W_1 = W_1 + np.dot(error_1, A_1.transpose()) * RATE  # 3x2
-        errors.append(error[0])
+            errors.append(error[0])
         # if abs(error[0]) < RATE / 2:
         #     break
     if abs(error[0]) < GLOBAL_ERROR:
