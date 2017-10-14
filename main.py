@@ -1,3 +1,4 @@
+# TODO добавить регуляризатор, обобщить на любое количество слоев, использовать датасет с ирисами
 # from sklearn import datasets
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,16 +48,16 @@ LEARN_Y = (
 
 N_INPUTS = len(LEARN_X[0])
 N_LAYERS = 1
-N_NEURONS = (3,)
+N_NEURONS = (10,)
 N_OUTPUTS = 1
 
 GLOBAL_W_1 = np.random.rand(N_NEURONS[0], N_INPUTS)
 # GLOBAL_W_2 = np.random.rand(N_NEURONS[1], N_NEURONS[0])
 GLOBAL_W_2 = np.random.rand(N_OUTPUTS, N_NEURONS[-1])
-RATES = [0.01]
-N = 10000
+RATES = [0.1]
+N = 200
+GLOBAL_ERROR = 1000000
 
-GLOBAL_ERROR = 0
 for RATE in RATES:
     errors = []
     W_1 = np.random.rand(N_NEURONS[0], N_INPUTS)  # 3x4
@@ -78,9 +79,12 @@ for RATE in RATES:
             error_1 = np.dot(W_2.transpose(), error) * A_2 * (1 - A_2)  # 3x1
             W_1 = W_1 + np.dot(error_1, A_1.transpose()) * RATE  # 3x2
         errors.append(error[0])
-    if error < GLOBAL_ERROR:
+        # if abs(error[0]) < RATE / 2:
+        #     break
+    if abs(error[0]) < GLOBAL_ERROR:
         GLOBAL_W_1 = W_1
         GLOBAL_W_2 = W_2
+        GLOBAL_ERROR = abs(error[0])
     plt.plot(errors)
     plt.show()
 
