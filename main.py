@@ -1,15 +1,22 @@
-# TODO добавить регуляризатор, обобщить на любое количество слоев, использовать датасет с ирисами
-# from sklearn import datasets
-import numpy as np
+# TODO добавить регуляризатор
+# TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
+# TODO при обучении использовать нормальную функцию оценки ошибки https://habrahabr.ru/company/ods/blog/328372/ (ниже указал где надо поменять)
+
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import datasets
 
 sigmoid = lambda x: 1 / (1 + np.exp(-x))
 v_sigmoid = np.vectorize(sigmoid)
 
-# iris = datasets.load_iris()
-# IRIS_X = iris.data[:, :2]  # we only take the first two features.
-# IRIS_Y = iris.target
-
+iris = datasets.load_iris()
+IRIS_X = iris.data  # we only take the first two features.
+mapIris = {
+    0: [1, 0, 0],
+    1: [0, 1, 0],
+    2: [0, 0, 1],
+}
+IRIS_Y = np.array([mapIris[x] for x in iris.target])
 
 # LEARN_X = [
 #     (0, 0),
@@ -46,53 +53,68 @@ LEARN_Y = (
     1
 )
 
-N_INPUTS = len(LEARN_X[0])
-N_LAYERS = 1
-N_NEURONS = (100,)
-N_OUTPUTS = 1
 
-GLOBAL_W_1 = np.random.rand(N_NEURONS[0], N_INPUTS)
-# GLOBAL_W_2 = np.random.rand(N_NEURONS[1], N_NEURONS[0])
-GLOBAL_W_2 = np.random.rand(N_OUTPUTS, N_NEURONS[-1])
-RATES = [0.1]
-N = 1000
-GLOBAL_ERROR = 1000000
+class Perceptron:
+    def __init__(self, n_inputs: int, outputs: int, neurons: tuple, rates: list, num_iter: int):
+        self.hidden_layers = len(neurons)
+        self.error = 1000000
+        self.rates = rates
+        self.num_iter = num_iter
+        self.weights = [np.random.rand(neurons[0], n_inputs)]
+        for i in range(len(neurons) - 1):
+            self.weights.append(np.random.rand(neurons[i + 1], neurons[i]))
+        self.weights.append(np.random.rand(outputs, neurons[-1]))
 
-for RATE in RATES:
-    errors = []
-    W_1 = np.random.rand(N_NEURONS[0], N_INPUTS)  # 3x4
-    # W_2 = np.random.rand(N_NEURONS[1], N_NEURONS[0])
-    W_2 = np.random.rand(N_OUTPUTS, N_NEURONS[-1])
-    print(W_1, W_2, sep='\n')
-    error = 0
-    for i in range(N):
-        for n in range(len(LEARN_X)):
-            A_1 = np.array([LEARN_X[n]]).transpose()  # 4x1
-            Z_2 = np.dot(W_1, A_1)  # 3x1
-            A_2 = v_sigmoid(Z_2)  # 4x1
-            Z_3 = np.dot(W_2, A_2)  # 1x1
-            A_R = v_sigmoid(Z_3)  # 1x1
+    def train(self, x, y):
+        for rate in self.rates:
+            errors = []
+            weights = []
+            for i in range(len(self.weights)):
+                weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
 
-            error = LEARN_Y[n] - A_R  # 1x1
-            W_2 = W_2 + np.dot(error, A_2.transpose()) * RATE  # 1x4
+            print(weights, sep='\n')
+            for i in range(self.num_iter):
+                for j in range(len(x)):
+                    a_layer = [np.array([x[j]]).transpose()]
+                    for l in range(self.hidden_layers + 1):
+                        z = np.dot(weights[l], a_layer[l])  # 3x1
+                        a_layer.append(v_sigmoid(z))
 
-            error_1 = np.dot(W_2.transpose(), error) * A_2 * (1 - A_2)  # 3x1
-            W_1 = W_1 + np.dot(error_1, A_1.transpose()) * RATE  # 3x2
-            errors.append(error[0])
-        # if abs(error[0]) < RATE / 2:
-        #     break
-    if abs(error[0]) < GLOBAL_ERROR:
-        GLOBAL_W_1 = W_1
-        GLOBAL_W_2 = W_2
-        GLOBAL_ERROR = abs(error[0])
-    plt.plot(errors)
-    plt.show()
+                    error = np.array([y[j]]).transpose() - a_layer[-1]  # 1x1
+                    errors.append(error[0])
+                    weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
 
-for n in range(len(LEARN_X)):
-    A_1 = np.array([LEARN_X[n]]).transpose()  # 3x1
-    Z_2 = np.dot(GLOBAL_W_1, A_1)  # 3x1
-    A_2 = v_sigmoid(Z_2)  # 3x1
-    Z_3 = np.dot(GLOBAL_W_2, A_2)  # 1x1
-    A_R = v_sigmoid(Z_3)  # 1x1
+                    for k in range(len(weights) - 1, 0, -1):
+                        error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
+                        weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-    print(LEARN_Y[n], A_R)
+            # вот эту херь ниже надо поменять.
+            # Первое: она не работает если несколько классов
+            # Второе она смотрит ошибку на последнем элементе обучающей выборки, что вообще не правильно.
+            # Как должно быть:
+            # Мы, после того как обучили, делаем предсказание на этой же выборке и смотрим по какой либо метрике,
+            # которая указана в статье на хабре (ссылка выше)
+            # И только после этого проверяем метрика улучшилась или нет
+            if abs(errors[-1][0]) < self.error:
+                for i in range(len(self.weights)):
+                    self.weights[i] = weights[i]
+                self.error = abs(errors[-1][0])
+            plt.plot(errors)
+            plt.show()
+
+    def predict(self, x):
+        arr = []
+        for n in range(len(x)):
+            a_l = np.array([x[n]]).transpose()  # 3x1
+            for i in range(len(self.weights)):
+                z = np.dot(self.weights[i], a_l)  # 3x1
+                a_l = v_sigmoid(z)  # 3x1
+
+            arr.append(a_l)
+        return arr
+
+
+a = Perceptron(4, 3, (15,), [0.01], 1000)
+a.train(IRIS_X, IRIS_Y)
+result = a.predict(IRIS_X)
+print(result)
