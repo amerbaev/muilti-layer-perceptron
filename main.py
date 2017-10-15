@@ -1,16 +1,16 @@
 # TODO добавить регуляризатор
 # TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
-# TODO при обучении использовать нормальную функцию оценки ошибки https://habrahabr.ru/company/ods/blog/328372/ (ниже указал где надо поменять)
+# TODO при обучении использовать нормальную функцию оценки ошибки
+# https://habrahabr.ru/company/ods/blog/328372/ (ниже указал где надо поменять)
 
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import datasets
 
-sigmoid = lambda x: 1 / (1 + np.exp(-x))
-v_sigmoid = np.vectorize(sigmoid)
+V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
 iris = datasets.load_iris()
-IRIS_X = iris.data  # we only take the first two features.
+IRIS_X = iris.data
 mapIris = {
     0: [1, 0, 0],
     1: [0, 1, 0],
@@ -72,13 +72,12 @@ class Perceptron:
             for i in range(len(self.weights)):
                 weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
 
-            print(weights, sep='\n')
             for i in range(self.num_iter):
                 for j in range(len(x)):
                     a_layer = [np.array([x[j]]).transpose()]
                     for l in range(self.hidden_layers + 1):
                         z = np.dot(weights[l], a_layer[l])  # 3x1
-                        a_layer.append(v_sigmoid(z))
+                        a_layer.append(V_SIGMOID(z))
 
                     error = np.array([y[j]]).transpose() - a_layer[-1]  # 1x1
                     errors.append(error[0])
@@ -89,7 +88,7 @@ class Perceptron:
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
             # вот эту херь ниже надо поменять.
-            # Первое: она не работает если несколько классов
+            # Первое: она не работает если есть несколько выходных классов
             # Второе она смотрит ошибку на последнем элементе обучающей выборки, что вообще не правильно.
             # Как должно быть:
             # Мы, после того как обучили, делаем предсказание на этой же выборке и смотрим по какой либо метрике,
@@ -99,8 +98,8 @@ class Perceptron:
                 for i in range(len(self.weights)):
                     self.weights[i] = weights[i]
                 self.error = abs(errors[-1][0])
-            plt.plot(errors)
-            plt.show()
+            # plt.plot(errors)
+            # plt.show()
 
     def predict(self, x):
         arr = []
@@ -108,13 +107,20 @@ class Perceptron:
             a_l = np.array([x[n]]).transpose()  # 3x1
             for i in range(len(self.weights)):
                 z = np.dot(self.weights[i], a_l)  # 3x1
-                a_l = v_sigmoid(z)  # 3x1
+                a_l = V_SIGMOID(z)  # 3x1
 
             arr.append(a_l)
-        return arr
+        return np.array(arr)  # TODO: получается shape (150, 3, 1)
+
+    @staticmethod
+    def logloss_crutch(y_true, y_pred):
+        return - (y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
 
 
 a = Perceptron(4, 3, (15,), [0.01], 1000)
 a.train(IRIS_X, IRIS_Y)
 result = a.predict(IRIS_X)
-print(result)
+print(result.shape)
+print(IRIS_Y.shape)
+# test = a.logloss_crutch(IRIS_Y, result)
+# print(test)
