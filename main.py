@@ -1,7 +1,5 @@
 # TODO добавить регуляризатор
 # TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
-# TODO при обучении использовать нормальную функцию оценки ошибки
-# https://habrahabr.ru/company/ods/blog/328372/ (ниже указал где надо поменять)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -55,6 +53,8 @@ LEARN_Y = (
 
 
 class Perceptron:
+    logloss = None
+
     def __init__(self, n_inputs: int, outputs: int, neurons: tuple, rates: list, num_iter: int):
         self.hidden_layers = len(neurons)
         self.error = 1000000
@@ -66,7 +66,9 @@ class Perceptron:
         self.weights.append(np.random.rand(outputs, neurons[-1]))
 
     def train(self, x, y):
+        losses = []
         for rate in self.rates:
+            print('Rate: ', rate)
             errors = []
             weights = []
             for i in range(len(self.weights)):
@@ -87,19 +89,18 @@ class Perceptron:
                         error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-            # вот эту херь ниже надо поменять.
-            # Первое: она не работает если есть несколько выходных классов
-            # Второе она смотрит ошибку на последнем элементе обучающей выборки, что вообще не правильно.
-            # Как должно быть:
-            # Мы, после того как обучили, делаем предсказание на этой же выборке и смотрим по какой либо метрике,
-            # которая указана в статье на хабре (ссылка выше)
-            # И только после этого проверяем метрика улучшилась или нет
-            # if abs(errors[-1][0]) < self.error:
-            for i in range(len(self.weights)):
-                self.weights[i] = weights[i]
-                # self.error = abs(errors[-1][0])
-            # plt.plot(errors)
-            # plt.show()
+            predict = self.predict(x)
+            logloss = self.logloss_crutch(y, predict)
+            losses.append(logloss)
+            if not self.logloss or logloss < self.logloss:
+                self.logloss = logloss
+                self.weights = weights
+                print('Better logloss:', logloss)
+            else:
+                print('Worst logloss: ', logloss)
+
+        plt.plot(losses)
+        plt.show()
 
     def predict(self, x):
         arr = []
@@ -112,15 +113,21 @@ class Perceptron:
             arr.append(a_l)
         return np.array(arr)
 
-    @staticmethod
-    def logloss_crutch(y_true, y_pred):
-        return - (y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)) # тут для одного числа, а у тебя список из векторов, нужно чтобы в итоге получилось ОДНО число
+    def logloss_crutch(self, y_true, y_pred):
+        logloss_sum = self.__logloss_sum(y_true, y_pred)
+        logloss = - (1 / y_true.size) * logloss_sum
+        return logloss
+
+    def __logloss_sum(self, y_true, y_pred):
+        try:
+            logloss_sum = sum(self.__logloss_sum(true_elem, pred_elem) for true_elem, pred_elem in zip(y_true, y_pred))
+        except TypeError:
+            logloss_sum = y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)
+        return logloss_sum
 
 
-a = Perceptron(4, 3, (15,), [0.01], 1000)
+a = Perceptron(4, 3, (15,), [0.001], 1000)
 a.train(IRIS_X, IRIS_Y)
 result = a.predict(IRIS_X)
-print(result.shape)
-print(IRIS_Y.shape)
-# test = a.logloss_crutch(IRIS_Y, result)
-# print(test)
+test = a.logloss_crutch(IRIS_Y, result)
+print('\n', test)
