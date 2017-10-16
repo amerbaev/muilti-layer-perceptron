@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import datasets
+import copy
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -67,13 +68,13 @@ class Perceptron:
 
     def train(self, x, y):
         losses = []
+        init_weights = []
+        for i in range(len(self.weights)):
+            init_weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
         for rate in self.rates:
             print('Rate: ', rate)
             errors = []
-            weights = []
-            for i in range(len(self.weights)):
-                weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
-
+            weights = copy.deepcopy(init_weights)
             for i in range(self.num_iter):
                 for j in range(len(x)):
                     a_layer = [np.array([x[j]]).transpose()]
@@ -89,7 +90,7 @@ class Perceptron:
                         error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-            predict = self.predict(x)
+            predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
             losses.append(logloss)
             if not self.logloss or logloss < self.logloss:
@@ -125,8 +126,20 @@ class Perceptron:
             logloss_sum = y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)
         return logloss_sum
 
+    @staticmethod
+    def __predict_test(x, weights):
+        arr = []
+        for n in range(len(x)):
+            a_l = np.array([x[n]]).transpose()  # 3x1
+            for i in range(len(weights)):
+                z = np.dot(weights[i], a_l)  # 3x1
+                a_l = V_SIGMOID(z)  # 3x1
 
-a = Perceptron(4, 3, (15,), [0.001], 1000)
+            arr.append(a_l)
+        return np.array(arr)
+
+
+a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 a.train(IRIS_X, IRIS_Y)
 result = a.predict(IRIS_X)
 test = a.logloss_crutch(IRIS_Y, result)
