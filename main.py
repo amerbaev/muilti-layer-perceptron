@@ -12,9 +12,9 @@ V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 iris = datasets.load_iris()
 IRIS_X = iris.data
 mapIris = {
-    0: [1, 0, 0],
-    1: [0, 1, 0],
-    2: [0, 0, 1],
+    0: [[1], [0], [0]],
+    1: [[0], [1], [0]],
+    2: [[0], [0], [1]],
 }
 IRIS_Y = np.array([mapIris[x] for x in iris.target])
 
@@ -79,7 +79,7 @@ class Perceptron:
                         z = np.dot(weights[l], a_layer[l])  # 3x1
                         a_layer.append(V_SIGMOID(z))
 
-                    error = np.array([y[j]]).transpose() - a_layer[-1]  # 1x1
+                    error = np.array(y[j]) - a_layer[-1]  # 1x1
                     errors.append(error[0])
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
 
@@ -94,10 +94,10 @@ class Perceptron:
             # Мы, после того как обучили, делаем предсказание на этой же выборке и смотрим по какой либо метрике,
             # которая указана в статье на хабре (ссылка выше)
             # И только после этого проверяем метрика улучшилась или нет
-            if abs(errors[-1][0]) < self.error:
-                for i in range(len(self.weights)):
-                    self.weights[i] = weights[i]
-                self.error = abs(errors[-1][0])
+            # if abs(errors[-1][0]) < self.error:
+            for i in range(len(self.weights)):
+                self.weights[i] = weights[i]
+                # self.error = abs(errors[-1][0])
             # plt.plot(errors)
             # plt.show()
 
@@ -110,11 +110,11 @@ class Perceptron:
                 a_l = V_SIGMOID(z)  # 3x1
 
             arr.append(a_l)
-        return np.array(arr)  # TODO: получается shape (150, 3, 1)
+        return np.array(arr)
 
     @staticmethod
     def logloss_crutch(y_true, y_pred):
-        return - (y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+        return - (y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred)) # тут для одного числа, а у тебя список из векторов, нужно чтобы в итоге получилось ОДНО число
 
 
 a = Perceptron(4, 3, (15,), [0.01], 1000)
