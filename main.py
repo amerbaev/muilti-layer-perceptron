@@ -53,6 +53,13 @@ LEARN_Y = (
 )
 
 
+def slice_dataset_2to1(dataset):
+    np.random.shuffle(dataset)
+    edge = int(2 / 3 * len(dataset))
+    x_learn, x_validation = dataset[:edge], dataset[edge:]
+    return x_learn, x_validation
+
+
 class Perceptron:
     logloss = None
 
@@ -112,7 +119,7 @@ class Perceptron:
                 a_l = V_SIGMOID(z)  # 3x1
 
             arr.append(a_l)
-        return np.array(arr)
+        return arr
 
     def logloss_crutch(self, y_true, y_pred):
         logloss_sum = self.__logloss_sum(y_true, y_pred)
@@ -136,11 +143,12 @@ class Perceptron:
                 a_l = V_SIGMOID(z)  # 3x1
 
             arr.append(a_l)
-        return np.array(arr)
+        return arr
 
 
 a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
-a.train(IRIS_X, IRIS_Y)
-result = a.predict(IRIS_X)
+iris_l, iris_v = slice_dataset_2to1(IRIS_X)
+a.train(iris_l, IRIS_Y)
+result = a.predict(iris_v)
 test = a.logloss_crutch(IRIS_Y, result)
 print('\n', test)
