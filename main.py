@@ -75,7 +75,7 @@ class Perceptron:
                 self.weights.append(np.random.rand(neurons[i + 1], neurons[i] + 1))
             self.weights.append(np.random.rand(outputs, neurons[-1] + 1))
         else:
-            self.weights.append(np.random.rand(outputs, n_inputs + 1))
+            self.weights = [np.random.rand(outputs, n_inputs + 1)]
 
     def train(self, x, y):
         losses = []
@@ -150,7 +150,7 @@ class Perceptron:
         return arr
 
 
-a = Perceptron(4, 3, (15,), [0.1, 0.01, 0.05, 1], 1000)
+a = Perceptron(4, 3, [], [0.1, 0.01, 0.05, 1], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X)
 a.train(iris_l, IRIS_Y)
 result = a.predict(iris_v)
