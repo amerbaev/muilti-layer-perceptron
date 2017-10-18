@@ -62,13 +62,13 @@ def slice_dataset_2to1(conditions, results):
     learn, validation = dataset[:edge], dataset[edge:]
 
     learn = {
-        'x': [d[0] for d in learn],
-        'y': [d[1] for d in learn]
+        'x': np.array([d[0] for d in learn]),
+        'y': np.array([d[1] for d in learn])
     }
 
     validation = {
-        'x': [d[0] for d in validation],
-        'y': [d[1] for d in validation]
+        'x': np.array([d[0] for d in validation]),
+        'y': np.array([d[1] for d in validation])
     }
 
     return learn, validation
