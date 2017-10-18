@@ -1,10 +1,11 @@
 # TODO добавить регуляризатор
 # TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
 
+import copy
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import datasets
-import copy
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -68,10 +69,13 @@ class Perceptron:
         self.error = 1000000
         self.rates = rates
         self.num_iter = num_iter
-        self.weights = [np.random.rand(neurons[0], n_inputs)]
-        for i in range(len(neurons) - 1):
-            self.weights.append(np.random.rand(neurons[i + 1], neurons[i]))
-        self.weights.append(np.random.rand(outputs, neurons[-1]))
+        if len(neurons) > 0:
+            self.weights = [np.random.rand(neurons[0], n_inputs + 1)]
+            for i in range(len(neurons) - 1):
+                self.weights.append(np.random.rand(neurons[i + 1], neurons[i] + 1))
+            self.weights.append(np.random.rand(outputs, neurons[-1] + 1))
+        else:
+            self.weights.append(np.random.rand(outputs, n_inputs + 1))
 
     def train(self, x, y):
         losses = []
@@ -84,18 +88,18 @@ class Perceptron:
             weights = copy.deepcopy(init_weights)
             for i in range(self.num_iter):
                 for j in range(len(x)):
-                    a_layer = [np.array([x[j]]).transpose()]
+                    a_layer = [np.concatenate((np.array([x[j]]).transpose(), [[-1]]))]
                     for l in range(self.hidden_layers + 1):
                         z = np.dot(weights[l], a_layer[l])  # 3x1
-                        a_layer.append(V_SIGMOID(z))
+                        a_layer.append(np.concatenate((V_SIGMOID(z), [[-1]])))
 
-                    error = np.array(y[j]) - a_layer[-1]  # 1x1
+                    error = np.array(y[j]) - a_layer[-1][:-1:]  # 1x1
                     errors.append(error[0])
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
 
                     for k in range(len(weights) - 1, 0, -1):
                         error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
-                        weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
+                        weights[k - 1] = weights[k - 1] + np.dot(error[:-1:], a_layer[k - 1].transpose()) * rate
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -113,12 +117,12 @@ class Perceptron:
     def predict(self, x):
         arr = []
         for n in range(len(x)):
-            a_l = np.array([x[n]]).transpose()  # 3x1
+            a_l = np.concatenate((np.array([x[n]]).transpose(), [[-1]]))  # 3x1
             for i in range(len(self.weights)):
                 z = np.dot(self.weights[i], a_l)  # 3x1
-                a_l = V_SIGMOID(z)  # 3x1
+                a_l = np.concatenate((V_SIGMOID(z), [[-1]]))  # 3x1
 
-            arr.append(a_l)
+            arr.append(a_l[:-1:])
         return arr
 
     def logloss_crutch(self, y_true, y_pred):
@@ -137,18 +141,20 @@ class Perceptron:
     def __predict_test(x, weights):
         arr = []
         for n in range(len(x)):
-            a_l = np.array([x[n]]).transpose()  # 3x1
+            a_l = np.concatenate((np.array([x[n]]).transpose(), [[-1]]))  # 3x1
             for i in range(len(weights)):
                 z = np.dot(weights[i], a_l)  # 3x1
-                a_l = V_SIGMOID(z)  # 3x1
+                a_l = np.concatenate((V_SIGMOID(z), [[-1]]))  # 3x1
 
-            arr.append(a_l)
+            arr.append(a_l[:-1:])
         return arr
 
 
-a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
+a = Perceptron(4, 3, (15,), [0.1, 0.01, 0.05, 1], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X)
 a.train(iris_l, IRIS_Y)
 result = a.predict(iris_v)
 test = a.logloss_crutch(IRIS_Y, result)
 print('\n', test)
+
+print(result)
