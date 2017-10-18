@@ -6,6 +6,7 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import datasets
+import copy
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -54,11 +55,23 @@ LEARN_Y = (
 )
 
 
-def slice_dataset_2to1(dataset):
+def slice_dataset_2to1(conditions, results):
+    dataset = [(x, y) for x, y in zip(conditions, results)]
     np.random.shuffle(dataset)
     edge = int(2 / 3 * len(dataset))
-    x_learn, x_validation = dataset[:edge], dataset[edge:]
-    return x_learn, x_validation
+    learn, validation = dataset[:edge], dataset[edge:]
+
+    learn = {
+        'x': [d[0] for d in learn],
+        'y': [d[1] for d in learn]
+    }
+
+    validation = {
+        'x': [d[0] for d in validation],
+        'y': [d[1] for d in validation]
+    }
+
+    return learn, validation
 
 
 class Perceptron:
@@ -150,11 +163,12 @@ class Perceptron:
         return arr
 
 
-a = Perceptron(4, 3, (15,), [0.1, 0.01, 0.05, 1], 1000)
-iris_l, iris_v = slice_dataset_2to1(IRIS_X)
-a.train(iris_l, IRIS_Y)
-result = a.predict(iris_v)
-test = a.logloss_crutch(IRIS_Y, result)
+a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
+iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
+print(iris_l['x'], iris_l['y'])
+a.train(iris_l['x'], iris_l['y'])
+result = a.predict(iris_v['x'])
+test = a.logloss_crutch(iris_v['y'], result)
 print('\n', test)
 
 print(result)
