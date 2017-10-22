@@ -4,8 +4,9 @@
 import copy
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from sklearn import datasets
+from sklearn import datasets, preprocessing
 import copy
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
@@ -18,6 +19,11 @@ mapIris = {
     2: [[0], [0], [1]],
 }
 IRIS_Y = np.array([mapIris[x] for x in iris.target])
+
+# lb = preprocessing.LabelBinarizer()
+# lb.fit([0, 1, 2])
+# IRIS_Y = lb.transform(iris.target)
+# print(IRIS_Y)
 
 # LEARN_X = [
 #     (0, 0),
@@ -163,12 +169,31 @@ class Perceptron:
         return arr
 
 
+def plot_iris_results(target, result):
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    # print(target, result, sep='\n')
+
+    t_xs = [x[0][0] for x in target]
+    t_ys = [y[1][0] for y in target]
+    t_zs = [z[2][0] for z in target]
+
+    r_xs = [x[0][0] for x in result]
+    r_ys = [y[1][0] for y in result]
+    r_zs = [z[2][0] for z in result]
+
+    ax.quiver(r_xs, r_ys, r_zs, t_xs, t_ys, t_zs)
+    plt.show()
+
+
 a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
-print(iris_l['x'], iris_l['y'])
 a.train(iris_l['x'], iris_l['y'])
 result = a.predict(iris_v['x'])
-test = a.logloss_crutch(iris_v['y'], result)
-print('\n', test)
+# test = a.logloss_crutch(iris_v['y'], result)
+# print('\n', test)
 
-print(result)
+plot_iris_results(iris_v['y'], result)
+
+
+# print(result)
