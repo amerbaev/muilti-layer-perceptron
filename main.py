@@ -1,5 +1,4 @@
 # TODO добавить регуляризатор
-# TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
 
 import copy
 
@@ -174,9 +173,9 @@ def plot_iris_results(target, result):
     ax = Axes3D(fig)
     # print(target, result, sep='\n')
 
-    t_xs = [x[0][0] for x in target]
-    t_ys = [y[1][0] for y in target]
-    t_zs = [z[2][0] for z in target]
+    t_xs = [t[0][0] - r[0][0] for t, r in zip(target, result)]
+    t_ys = [t[1][0] - r[1][0] for t, r in zip(target, result)]
+    t_zs = [t[2][0] - r[2][0] for t, r in zip(target, result)]
 
     r_xs = [x[0][0] for x in result]
     r_ys = [y[1][0] for y in result]
@@ -194,6 +193,5 @@ result = a.predict(iris_v['x'])
 # print('\n', test)
 
 plot_iris_results(iris_v['y'], result)
-
 
 # print(result)
