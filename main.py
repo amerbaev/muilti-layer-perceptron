@@ -1,13 +1,11 @@
 # TODO добавить регуляризатор
-# TODO разбить датасет на обучающую, валидационную и тестовую выборки и использовать их при обучении нейросетки
 
 import copy
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from sklearn import datasets, preprocessing
-import copy
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn import datasets
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -120,9 +118,9 @@ class Perceptron:
                     self.errors[ir * self.num_iter + i][-1] = sum([abs(e[0]) for e in error])
 
                     for k in range(len(weights) - 1, 0, -1):
-                        error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
+                        error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
                         self.errors[ir * self.num_iter + i][k - 1] = sum([abs(e[0]) for e in error])
-                        weights[k - 1] = weights[k - 1] + np.dot(error[:-1:], a_layer[k - 1].transpose()) * rate
+                        weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -190,9 +188,9 @@ def plot_iris_results(target, result):
     ax = Axes3D(fig)
     # print(target, result, sep='\n')
 
-    t_xs = [x[0][0] for x in target]
-    t_ys = [y[1][0] for y in target]
-    t_zs = [z[2][0] for z in target]
+    t_xs = [t[0][0] - r[0][0] for t, r in zip(target, result)]
+    t_ys = [t[1][0] - r[1][0] for t, r in zip(target, result)]
+    t_zs = [t[2][0] - r[2][0] for t, r in zip(target, result)]
 
     r_xs = [x[0][0] for x in result]
     r_ys = [y[1][0] for y in result]
@@ -201,8 +199,7 @@ def plot_iris_results(target, result):
     ax.quiver(r_xs, r_ys, r_zs, t_xs, t_ys, t_zs)
     plt.show()
 
-
-a = Perceptron(4, 3, (15,), [0.5, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
+a = Perceptron(4, 3, (3,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
 a.train(iris_l['x'], iris_l['y'])
 a.plot_losses()
@@ -212,6 +209,5 @@ a.plot_errors()
 # print('\n', test)
 
 # plot_iris_results(iris_v['y'], result)
-
 
 # print(result)
