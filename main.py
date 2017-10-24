@@ -3,10 +3,9 @@
 import copy
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from sklearn import datasets, preprocessing
-import copy
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn import datasets
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -116,8 +115,8 @@ class Perceptron:
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
 
                     for k in range(len(weights) - 1, 0, -1):
-                        error = np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k])
-                        weights[k - 1] = weights[k - 1] + np.dot(error[:-1:], a_layer[k - 1].transpose()) * rate
+                        error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
+                        weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -185,7 +184,7 @@ def plot_iris_results(target, result):
     plt.show()
 
 
-a = Perceptron(4, 3, (15,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
+a = Perceptron(4, 3, (3,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
 a.train(iris_l['x'], iris_l['y'])
 result = a.predict(iris_v['x'])
