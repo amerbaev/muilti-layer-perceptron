@@ -93,13 +93,15 @@ class Perceptron:
             self.weights.append(np.random.rand(outputs, neurons[-1] + 1))
         else:
             self.weights = [np.random.rand(outputs, n_inputs + 1)]
+        # self.errors = list(list(list(0 for _ in range(len(neurons) + 1)) for _ in range(num_iter)) for _ in range(len(rates)))
+        self.errors = list(list(None for _ in range(len(neurons) + 1)) for _ in range(num_iter * len(rates)))
+        self.losses = []
 
     def train(self, x, y):
-        losses = []
         init_weights = []
         for i in range(len(self.weights)):
             init_weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
-        for rate in self.rates:
+        for ir, rate in enumerate(self.rates):
             print('Rate: ', rate)
             errors = []
             weights = copy.deepcopy(init_weights)
@@ -113,14 +115,16 @@ class Perceptron:
                     error = np.array(y[j]) - a_layer[-1][:-1:]  # 1x1
                     errors.append(error[0])
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
+                    self.errors[ir * self.num_iter + i][-1] = sum([abs(e[0]) for e in error])
 
                     for k in range(len(weights) - 1, 0, -1):
                         error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
+                        self.errors[ir * self.num_iter + i][k - 1] = sum([abs(e[0]) for e in error])
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
-            losses.append(logloss)
+            self.losses.append(logloss)
             if not self.logloss or logloss < self.logloss:
                 self.logloss = logloss
                 self.weights = weights
@@ -128,8 +132,9 @@ class Perceptron:
             else:
                 print('Worst logloss: ', logloss)
 
-        plt.plot(losses)
-        plt.show()
+        # plt.plot(losses)
+        #
+        # plt.show()
 
     def predict(self, x):
         arr = []
@@ -166,6 +171,17 @@ class Perceptron:
             arr.append(a_l[:-1:])
         return arr
 
+    def plot_errors(self):
+        for i in range(len(self.weights)):
+            plt.plot([e[i] for e in self.errors], label='Level ' + str(i))
+        plt.legend()
+        plt.show()
+
+    def plot_losses(self):
+        plt.plot(self.losses, label='Logloss')
+        plt.legend()
+        plt.show()
+
 
 def plot_iris_results(target, result):
     fig = plt.figure()
@@ -183,14 +199,15 @@ def plot_iris_results(target, result):
     ax.quiver(r_xs, r_ys, r_zs, t_xs, t_ys, t_zs)
     plt.show()
 
-
 a = Perceptron(4, 3, (3,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
 a.train(iris_l['x'], iris_l['y'])
-result = a.predict(iris_v['x'])
+a.plot_losses()
+a.plot_errors()
+# result = a.predict(iris_v['x'])
 # test = a.logloss_crutch(iris_v['y'], result)
 # print('\n', test)
 
-plot_iris_results(iris_v['y'], result)
+# plot_iris_results(iris_v['y'], result)
 
 # print(result)
