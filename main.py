@@ -1,10 +1,13 @@
 import copy
+import itertools
 
-import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn import datasets
 from sklearn import preprocessing
+from sklearn import metrics
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -156,15 +159,42 @@ def plot_iris_results(target, result):
     plt.show()
 
 
+def plot_confusion_matrix(cm, classes, title='Матрица ошибок'):
+    plt.imshow(cm, interpolation='nearest')
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('Истинный класс')
+    plt.xlabel('Предсказанный класс')
+
+
 a = Perceptron(4, 3, (5,), [0.01, 0.005], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
 a.train(iris_l['x'], iris_l['y'])
 # a.plot_losses()
 # a.plot_errors()
 result = a.predict(iris_v['x'])
+# print(result)
 # test = a.logloss_crutch(iris_v['y'], result)
 # print('\n', test)
 
 # plot_iris_results(iris_v['y'], result)
-print(lb.inverse_transform(np.array(result)))
-print(lb.inverse_transform(iris_v['y']).transpose()[0])
+# y_pred = lb.inverse_transform(np.array(result))
+# y_true = lb.inverse_transform(iris_v['y']).transpose()[0]
+
+# conf_mtrx = metrics.confusion_matrix(y_pred=y_pred, y_true=y_true)
+
+# plot_confusion_matrix(cm=conf_mtrx, classes=[0, 1, 2])
+
+
+plt.show()
