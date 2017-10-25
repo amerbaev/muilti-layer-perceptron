@@ -7,15 +7,10 @@ from sklearn import preprocessing
 from sklearn import metrics
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+
+from tqdm import tqdm
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
-
-iris = datasets.load_iris()
-IRIS_X = iris.data
-
-lb = preprocessing.LabelBinarizer()
-IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
 
 def slice_dataset_2to1(conditions, results):
@@ -52,19 +47,17 @@ class Perceptron:
             self.weights.append(np.random.rand(outputs, neurons[-1] + 1))
         else:
             self.weights = [np.random.rand(outputs, n_inputs + 1)]
-        # self.errors = list(list(list(0 for _ in range(len(neurons) + 1)) for _ in range(num_iter)) for _ in range(len(rates)))
-        self.errors = list(list(None for _ in range(len(neurons) + 1)) for _ in range(num_iter * len(rates)))
+        self.errors = {}
         self.losses = []
 
     def train(self, x, y):
         init_weights = []
         for i in range(len(self.weights)):
             init_weights.append(np.random.rand(self.weights[i].shape[0], self.weights[i].shape[1]))
-        for ir, rate in enumerate(self.rates):
-            print('Rate: ', rate)
-            errors = []
+        for rate in self.rates:
+            print('\nRate: ', rate)
             weights = copy.deepcopy(init_weights)
-            for i in range(self.num_iter):
+            for i in tqdm(range(self.num_iter)):
                 for j in range(len(x)):
                     a_layer = [np.concatenate((np.array([x[j]]).transpose(), [[-1]]))]
                     for l in range(self.hidden_layers + 1):
@@ -72,13 +65,14 @@ class Perceptron:
                         a_layer.append(np.concatenate((V_SIGMOID(z), [[-1]])))
 
                     error = np.array(y[j]) - a_layer[-1][:-1:]  # 1x1
-                    errors.append(error[0])
-                    weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
-                    self.errors[ir * self.num_iter + i][-1] = sum([abs(e[0]) for e in error])
+                    if rate in self.errors:
+                        self.errors[rate] += [e for e in error]
+                    else:
+                        self.errors[rate] = [e for e in error]
 
+                    weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
                     for k in range(len(weights) - 1, 0, -1):
                         error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
-                        self.errors[ir * self.num_iter + i][k - 1] = sum([abs(e[0]) for e in error])
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
             predict = self.__predict_test(x, weights)
@@ -90,10 +84,6 @@ class Perceptron:
                 print('Better logloss:', logloss)
             else:
                 print('Worst logloss: ', logloss)
-
-                # plt.plot(losses)
-                #
-                # plt.show()
 
     def predict(self, x):
         arr = []
@@ -131,35 +121,22 @@ class Perceptron:
         return arr
 
     def plot_errors(self):
-        for i in range(len(self.weights)):
-            plt.plot([e[i] for e in self.errors], label='Level ' + str(i))
-        plt.legend()
-        plt.show()
+        f, axarr = plt.subplots(len(self.errors))
+        if len(self.errors) > 1:
+            for i, k in enumerate(self.errors):
+                axarr[i].plot([e for e in self.errors[k]])
+                axarr[i].set_title('Rate ' + str(k))
+        else:
+            axarr.plot([e for e in self.errors[next(iter(self.errors))]])
 
     def plot_losses(self):
         plt.plot(self.losses, label='Logloss')
         plt.legend()
-        plt.show()
 
 
-def plot_iris_results(target, result):
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    # print(target, result, sep='\n')
+def plot_confusion_matrix(y_pred, y_true, classes, title='Матрица ошибок'):
+    cm = metrics.confusion_matrix(y_true, y_pred)
 
-    t_xs = [t[0][0] - r[0][0] for t, r in zip(target, result)]
-    t_ys = [t[1][0] - r[1][0] for t, r in zip(target, result)]
-    t_zs = [t[2][0] - r[2][0] for t, r in zip(target, result)]
-
-    r_xs = [x[0][0] for x in result]
-    r_ys = [y[1][0] for y in result]
-    r_zs = [z[2][0] for z in result]
-
-    ax.quiver(r_xs, r_ys, r_zs, t_xs, t_ys, t_zs)
-    plt.show()
-
-
-def plot_confusion_matrix(cm, classes, title='Матрица ошибок'):
     plt.imshow(cm, interpolation='nearest')
     plt.title(title)
     plt.colorbar()
@@ -178,23 +155,24 @@ def plot_confusion_matrix(cm, classes, title='Матрица ошибок'):
     plt.xlabel('Предсказанный класс')
 
 
-a = Perceptron(4, 3, (5,), [0.01, 0.005], 1000)
-iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
-a.train(iris_l['x'], iris_l['y'])
-# a.plot_losses()
-# a.plot_errors()
-result = a.predict(iris_v['x'])
-# print(result)
-# test = a.logloss_crutch(iris_v['y'], result)
-# print('\n', test)
+if __name__ == "__main__":
+    iris = datasets.load_iris()
+    IRIS_X = iris.data
 
-# plot_iris_results(iris_v['y'], result)
-# y_pred = lb.inverse_transform(np.array(result))
-# y_true = lb.inverse_transform(iris_v['y']).transpose()[0]
+    lb = preprocessing.LabelBinarizer()
+    IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-# conf_mtrx = metrics.confusion_matrix(y_pred=y_pred, y_true=y_true)
+    a = Perceptron(4, 3, (4, 3), [0.01, 0.005], 1000)
+    iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
+    a.train(iris_l['x'], iris_l['y'])
+    # a.plot_losses()
+    a.plot_errors()
+    # result = a.predict(iris_v['x'])
+    # print(result)
+    # test = a.logloss_crutch(iris_v['y'], result)
+    #
+    # pred = lb.inverse_transform(np.array(result))
+    # true = lb.inverse_transform(iris_v['y']).transpose()[0]
+    # plot_confusion_matrix(y_pred=pred, y_true=true, classes=iris.target_names)
 
-# plot_confusion_matrix(cm=conf_mtrx, classes=[0, 1, 2])
-
-
-plt.show()
+    plt.show()
