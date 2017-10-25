@@ -100,7 +100,7 @@ class Perceptron:
                 z = np.dot(self.weights[i], a_l)  # 3x1
                 a_l = np.concatenate((V_SIGMOID(z), [[-1]]))  # 3x1
 
-            arr.append(a_l[:-1:])
+            arr.append(a_l[:-1:].transpose()[0])
         return arr
 
     def logloss_crutch(self, y_true, y_pred):
@@ -156,15 +156,15 @@ def plot_iris_results(target, result):
     plt.show()
 
 
-a = Perceptron(4, 3, (3,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
+a = Perceptron(4, 3, (5,), [0.01, 0.005], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
 a.train(iris_l['x'], iris_l['y'])
-a.plot_losses()
-a.plot_errors()
-# result = a.predict(iris_v['x'])
+# a.plot_losses()
+# a.plot_errors()
+result = a.predict(iris_v['x'])
 # test = a.logloss_crutch(iris_v['y'], result)
 # print('\n', test)
 
 # plot_iris_results(iris_v['y'], result)
-
-# print(result)
+print(lb.inverse_transform(np.array(result)))
+print(lb.inverse_transform(iris_v['y']).transpose()[0])
