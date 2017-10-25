@@ -1,62 +1,18 @@
-# TODO добавить регуляризатор
-
 import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn import datasets
+from sklearn import preprocessing
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
 iris = datasets.load_iris()
 IRIS_X = iris.data
-mapIris = {
-    0: [[1], [0], [0]],
-    1: [[0], [1], [0]],
-    2: [[0], [0], [1]],
-}
-IRIS_Y = np.array([mapIris[x] for x in iris.target])
 
-# lb = preprocessing.LabelBinarizer()
-# lb.fit([0, 1, 2])
-# IRIS_Y = lb.transform(iris.target)
-# print(IRIS_Y)
-
-# LEARN_X = [
-#     (0, 0),
-#     (0, 1),
-#     (1, 0),
-#     (1, 1)
-# ]
-#
-# LEARN_Y = (
-#     0,
-#     1,
-#     1,
-#     0
-# )
-LEARN_X = [
-    (0, 0, 0),
-    (0, 0, 1),
-    (0, 1, 0),
-    (0, 1, 1),
-    (1, 0, 0),
-    (1, 0, 1),
-    (1, 1, 0),
-    (1, 1, 1),
-]
-
-LEARN_Y = (
-    0,
-    1,
-    1,
-    0,
-    1,
-    0,
-    0,
-    1
-)
+lb = preprocessing.LabelBinarizer()
+IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
 
 def slice_dataset_2to1(conditions, results):
@@ -132,9 +88,9 @@ class Perceptron:
             else:
                 print('Worst logloss: ', logloss)
 
-        # plt.plot(losses)
-        #
-        # plt.show()
+                # plt.plot(losses)
+                #
+                # plt.show()
 
     def predict(self, x):
         arr = []
@@ -198,6 +154,7 @@ def plot_iris_results(target, result):
 
     ax.quiver(r_xs, r_ys, r_zs, t_xs, t_ys, t_zs)
     plt.show()
+
 
 a = Perceptron(4, 3, (3,), [1, 0.1, 0.05, 0.01, 0.005, 0.001], 1000)
 iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
