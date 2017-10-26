@@ -66,9 +66,9 @@ class Perceptron:
 
                     error = np.array(y[j]) - a_layer[-1][:-1:]  # 1x1
                     if rate in self.errors:
-                        self.errors[rate] += [e for e in error]
+                        self.errors[rate].append(error)
                     else:
-                        self.errors[rate] = [e for e in error]
+                        self.errors[rate] = [error]
 
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
                     for k in range(len(weights) - 1, 0, -1):
@@ -124,10 +124,13 @@ class Perceptron:
         f, axarr = plt.subplots(len(self.errors))
         if len(self.errors) > 1:
             for i, k in enumerate(self.errors):
-                axarr[i].plot([e for e in self.errors[k]])
+                for c in range(len(self.errors[k][0])):
+                    axarr[i].plot([e[c] for e in self.errors[k]], alpha=.33)
                 axarr[i].set_title('Rate ' + str(k))
         else:
-            axarr.plot([e for e in self.errors[next(iter(self.errors))]])
+            key = next(iter(self.errors))
+            for c in range(len(self.errors[key])):
+                axarr.plot([e[c] for e in self.errors[key]], alpha=.33)
 
     def plot_losses(self):
         plt.plot(self.losses, label='Logloss')
@@ -162,7 +165,7 @@ if __name__ == "__main__":
     lb = preprocessing.LabelBinarizer()
     IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-    a = Perceptron(4, 3, (4, 3), [0.01, 0.005], 1000)
+    a = Perceptron(4, 3, (15,), [0.01, 0.005], 1000)
     iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
     a.train(iris_l['x'], iris_l['y'])
     # a.plot_losses()
