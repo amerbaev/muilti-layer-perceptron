@@ -2,9 +2,7 @@ import copy
 import itertools
 
 import numpy as np
-from sklearn import datasets
-from sklearn import preprocessing
-from sklearn import metrics
+from sklearn import datasets, preprocessing, metrics, svm, multiclass
 
 import matplotlib.pyplot as plt
 
@@ -158,6 +156,25 @@ def plot_confusion_matrix(y_pred, y_true, classes, title='Матрица оши�
     plt.xlabel('Предсказанный класс')
 
 
+def plot_multiclass_roc(y_pred, y_true):
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+
+    n_classes = len(y_true[0])
+
+    fpr = [None] * n_classes
+    tpr = [None] * n_classes
+    roc_auc = [None] * n_classes
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_pred[:, i])
+        roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+
+    plt.plot((0, 1), (0, 1), linestyle='--')
+    for i, (f, t, a) in enumerate(zip(fpr, tpr, roc_auc)):
+        plt.plot(f, t, label='ROC класс {} (площадь = {})'.format(i, a))
+    plt.legend()
+
+
 if __name__ == "__main__":
     iris = datasets.load_iris()
     IRIS_X = iris.data
@@ -165,17 +182,18 @@ if __name__ == "__main__":
     lb = preprocessing.LabelBinarizer()
     IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-    a = Perceptron(4, 3, (15,), [0.01, 0.005], 1000)
+    a = Perceptron(4, 3, (5,), [0.01], 1000)
     iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
     a.train(iris_l['x'], iris_l['y'])
     # a.plot_losses()
-    a.plot_errors()
-    # result = a.predict(iris_v['x'])
+    # a.plot_errors()
+    result = a.predict(iris_v['x'])
     # print(result)
     # test = a.logloss_crutch(iris_v['y'], result)
-    #
-    # pred = lb.inverse_transform(np.array(result))
-    # true = lb.inverse_transform(iris_v['y']).transpose()[0]
+
+    pred = lb.inverse_transform(np.array(result))
+    true = lb.inverse_transform(iris_v['y']).transpose()[0]
+    plot_multiclass_roc(result, lb.fit_transform(true))
     # plot_confusion_matrix(y_pred=pred, y_true=true, classes=iris.target_names)
 
     plt.show()
