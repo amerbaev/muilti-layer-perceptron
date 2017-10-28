@@ -172,6 +172,8 @@ def plot_multiclass_roc(y_pred, y_true):
     plt.plot((0, 1), (0, 1), linestyle='--')
     for i, (f, t, a) in enumerate(zip(fpr, tpr, roc_auc)):
         plt.plot(f, t, label='ROC класс {} (площадь = {})'.format(i, a))
+    plt.xlabel('False-positive')
+    plt.ylabel('True-positive')
     plt.legend()
 
 
@@ -182,7 +184,7 @@ if __name__ == "__main__":
     lb = preprocessing.LabelBinarizer()
     IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-    a = Perceptron(4, 3, (5,), [0.01], 1000)
+    a = Perceptron(4, 3, (100, 20), [0.01], 100)
     iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
     a.train(iris_l['x'], iris_l['y'])
     # a.plot_losses()
