@@ -2,9 +2,11 @@ import copy
 import itertools
 
 import numpy as np
+import pandas as pd
 from sklearn import datasets, preprocessing, metrics, svm, multiclass
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from tqdm import tqdm
 
@@ -55,23 +57,28 @@ class Perceptron:
         for rate in self.rates:
             print('\nRate: ', rate)
             weights = copy.deepcopy(init_weights)
+            l, v = slice_dataset_2to1(x, y)
+            x_t, y_t, x_v, y_v = l['x'], l['y'], v['x'], v['y']
             for _ in tqdm(range(self.num_iter)):
-                for j in range(len(x)):
-                    a_layer = [np.concatenate((np.array([x[j]]).transpose(), [[-1]]))]
+                for j in range(len(x_t)):
+                    a_layer = [np.concatenate((np.array([x_t[j]]).transpose(), [[-1]]))]
                     for l in range(self.hidden_layers + 1):
                         z = np.dot(weights[l], a_layer[l])  # 3x1
                         a_layer.append(np.concatenate((V_SIGMOID(z), [[-1]])))
 
-                    error = np.array(y[j]) - a_layer[-1][:-1:]  # 1x1
-                    if rate in self.errors:
-                        self.errors[rate].append(error)
-                    else:
-                        self.errors[rate] = [error]
+                    error = np.array(y_t[j]) - a_layer[-1][:-1:]  # 1x1
 
                     weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
                     for k in range(len(weights) - 1, 0, -1):
                         error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
                         weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
+
+                    predict = self.__predict_test(x_v, weights)
+                    logloss = self.logloss_crutch(y_v, predict)
+                    if rate in self.errors:
+                        self.errors[rate].append(logloss)
+                    else:
+                        self.errors[rate] = [logloss]
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -123,14 +130,11 @@ class Perceptron:
         if len(self.errors) > 1:
             f, axarr = plt.subplots(len(self.errors))
             for i, k in enumerate(self.errors):
-                for c in range(len(self.errors[k][0])):
-                    axarr[i].plot([e[c] for e in self.errors[k]], alpha=.33)
+                axarr[i].plot([e for e in self.errors[k]], alpha=.33)
                 axarr[i].set_title('Rate ' + str(k))
         else:
-            plt.figure()
             key = next(iter(self.errors))
-            for cls in range(len(self.errors[key][0])):
-                plt.plot([e[cls] for e in self.errors[key]], alpha=.33)
+            plt.plot([e for e in self.errors[key]], alpha=.33)
 
     def plot_losses(self):
         plt.plot(self.losses, label='Logloss')
@@ -177,7 +181,6 @@ def plot_multiclass_roc(y_pred, y_true):
     plt.plot((0, 1), (0, 1), linestyle='--')
     for i, (f, t, a) in enumerate(zip(fpr, tpr, roc_auc)):
         plt.plot(f, t, label='ROC класс {} (площадь = {:.2f})'.format(i, a))
-        plt.plot(f, t, label='ROC класс {} (площадь = {})'.format(i, a))
     plt.xlabel('False-positive')
     plt.ylabel('True-positive')
     plt.legend()
@@ -190,11 +193,11 @@ if __name__ == "__main__":
     lb = preprocessing.LabelBinarizer()
     IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-    a = Perceptron(4, 3, (100, 20), [0.1, 0.05, 0.01, 0.005], 100)
+    a = Perceptron(4, 3, (5,), [0.01,], 50)
     iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
     a.train(iris_l['x'], iris_l['y'])
     # a.plot_losses()
-    # a.plot_errors()
+    a.plot_errors()
     result = a.predict(iris_v['x'])
     # print(result)
     # test = a.logloss_crutch(iris_v['y'], result)
