@@ -55,7 +55,7 @@ class Perceptron:
         for rate in self.rates:
             print('\nRate: ', rate)
             weights = copy.deepcopy(init_weights)
-            for i in tqdm(range(self.num_iter)):
+            for _ in tqdm(range(self.num_iter)):
                 for j in range(len(x)):
                     a_layer = [np.concatenate((np.array([x[j]]).transpose(), [[-1]]))]
                     for l in range(self.hidden_layers + 1):
@@ -119,25 +119,28 @@ class Perceptron:
         return arr
 
     def plot_errors(self):
-        f, axarr = plt.subplots(len(self.errors))
         if len(self.errors) > 1:
+            f, axarr = plt.subplots(len(self.errors))
             for i, k in enumerate(self.errors):
                 for c in range(len(self.errors[k][0])):
                     axarr[i].plot([e[c] for e in self.errors[k]], alpha=.33)
                 axarr[i].set_title('Rate ' + str(k))
         else:
+            plt.figure()
             key = next(iter(self.errors))
-            for c in range(len(self.errors[key])):
-                axarr.plot([e[c] for e in self.errors[key]], alpha=.33)
+            for cls in range(len(self.errors[key][0])):
+                plt.plot([e[cls] for e in self.errors[key]], alpha=.33)
 
     def plot_losses(self):
         plt.plot(self.losses, label='Logloss')
+        plt.xticks(range(len(self.rates)), self.rates)
         plt.legend()
 
 
 def plot_confusion_matrix(y_pred, y_true, classes, title='Матрица ошибок'):
     cm = metrics.confusion_matrix(y_true, y_pred)
 
+    plt.figure()
     plt.imshow(cm, interpolation='nearest')
     plt.title(title)
     plt.colorbar()
@@ -169,9 +172,10 @@ def plot_multiclass_roc(y_pred, y_true):
         fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_pred[:, i])
         roc_auc[i] = metrics.auc(fpr[i], tpr[i])
 
+    plt.figure()
     plt.plot((0, 1), (0, 1), linestyle='--')
     for i, (f, t, a) in enumerate(zip(fpr, tpr, roc_auc)):
-        plt.plot(f, t, label='ROC класс {} (площадь = {})'.format(i, a))
+        plt.plot(f, t, label='ROC класс {} (площадь = {:.2f})'.format(i, a))
     plt.legend()
 
 
@@ -182,11 +186,11 @@ if __name__ == "__main__":
     lb = preprocessing.LabelBinarizer()
     IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
 
-    a = Perceptron(4, 3, (5,), [0.01], 1000)
+    a = Perceptron(4, 3, (5,), [0.1, 0.05, 0.01, 0.005], 1000)
     iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
     a.train(iris_l['x'], iris_l['y'])
-    # a.plot_losses()
-    # a.plot_errors()
+    a.plot_losses()
+    a.plot_errors()
     result = a.predict(iris_v['x'])
     # print(result)
     # test = a.logloss_crutch(iris_v['y'], result)
