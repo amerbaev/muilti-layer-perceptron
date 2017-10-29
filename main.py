@@ -1,13 +1,9 @@
 import copy
 import itertools
 
-import numpy as np
-import pandas as pd
-from sklearn import datasets, preprocessing, metrics, svm, multiclass
-
 import matplotlib.pyplot as plt
-import seaborn as sns
-
+import numpy as np
+from sklearn import datasets, preprocessing, metrics
 from tqdm import tqdm
 
 V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
@@ -60,25 +56,25 @@ class Perceptron:
             l, v = slice_dataset_2to1(x, y)
             x_t, y_t, x_v, y_v = l['x'], l['y'], v['x'], v['y']
             for _ in tqdm(range(self.num_iter)):
-                for j in range(len(x_t)):
-                    a_layer = [np.concatenate((np.array([x_t[j]]).transpose(), [[-1]]))]
-                    for l in range(self.hidden_layers + 1):
-                        z = np.dot(weights[l], a_layer[l])  # 3x1
-                        a_layer.append(np.concatenate((V_SIGMOID(z), [[-1]])))
+                j = np.random.randint(0, len(x_t))
+                a_layer = [np.concatenate((np.array([x_t[j]]).transpose(), [[-1]]))]
+                for l in range(self.hidden_layers + 1):
+                    z = np.dot(weights[l], a_layer[l])  # 3x1
+                    a_res = np.concatenate((V_SIGMOID(z), [[-1]]))
+                    a_layer.append(a_res)
 
-                    error = np.array(y_t[j]) - a_layer[-1][:-1:]  # 1x1
+                error = np.array(y_t[j]) - a_layer[-1][:-1:]  # 1x1
+                weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
+                for k in range(len(weights) - 1, 0, -1):
+                    error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
+                    weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-                    weights[-1] = weights[-1] + np.dot(error, a_layer[-2].transpose()) * rate
-                    for k in range(len(weights) - 1, 0, -1):
-                        error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
-                        weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
-
-                    predict = self.__predict_test(x_v, weights)
-                    logloss = self.logloss_crutch(y_v, predict)
-                    if rate in self.errors:
-                        self.errors[rate].append(logloss)
-                    else:
-                        self.errors[rate] = [logloss]
+                # predict = self.__predict_test(x_v, weights)
+                # logloss = self.logloss_crutch(y_v, predict)
+                # if rate in self.errors:
+                #     self.errors[rate].append(logloss)
+                # else:
+                #     self.errors[rate] = [logloss]
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -187,24 +183,45 @@ def plot_multiclass_roc(y_pred, y_true):
 
 
 if __name__ == "__main__":
-    iris = datasets.load_iris()
-    IRIS_X = iris.data
+    # iris = datasets.load_iris()
+    # IRIS_X = iris.data
+    #
+    # lb = preprocessing.LabelBinarizer()
+    # IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
+    #
+    # a = Perceptron(4, 3, (3, 2), [0.01], 1000)
+    # iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
+    # a.train(iris_l['x'], iris_l['y'])
+    # # a.plot_losses()
+    # # a.plot_errors()
+    # result = a.predict(iris_v['x'])
+    # # print(result)
+    # # test = a.logloss_crutch(iris_v['y'], result)
+    #
+    # pred = lb.inverse_transform(np.array(result))
+    # true = lb.inverse_transform(iris_v['y']).transpose()[0]
+    # plot_multiclass_roc(result, lb.fit_transform(true))
+    # # plot_confusion_matrix(y_pred=pred, y_true=true, classes=iris.target_names)
+    #
+    # print(pred)
+    # print(true)
+    # plt.show()
 
+    digits = datasets.load_digits()
+    DIGITS_X = preprocessing.normalize(digits.data, norm='l2')
     lb = preprocessing.LabelBinarizer()
-    IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
+    DIGITS_Y = [np.array([i]).transpose() for i in lb.fit_transform(digits.target)]
 
-    a = Perceptron(4, 3, (5,), [0.01,], 50)
-    iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
-    a.train(iris_l['x'], iris_l['y'])
-    # a.plot_losses()
-    a.plot_errors()
-    result = a.predict(iris_v['x'])
-    # print(result)
-    # test = a.logloss_crutch(iris_v['y'], result)
-
+    a = Perceptron(64, 10, (100, 76), [0.01, 0.005], 300000)
+    digits_l, digits_v = slice_dataset_2to1(DIGITS_X, DIGITS_Y)
+    print(digits_l['x'].shape)
+    a.train(digits_l['x'], digits_l['y'])
+    # a.plot_errors()
+    result = a.predict(digits_v['x'])
     pred = lb.inverse_transform(np.array(result))
-    true = lb.inverse_transform(iris_v['y']).transpose()[0]
-    plot_multiclass_roc(result, lb.fit_transform(true))
-    # plot_confusion_matrix(y_pred=pred, y_true=true, classes=iris.target_names)
+    true = lb.inverse_transform(digits_v['y']).transpose()[0]
 
+    print(pred)
+    print(true)
+    # plot_multiclass_roc(result, lb.fit_transform(true))
     plt.show()
