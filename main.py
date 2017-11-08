@@ -69,12 +69,12 @@ class Perceptron:
                     error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
                     weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-                # predict = self.__predict_test(x_v, weights)
-                # logloss = self.logloss_crutch(y_v, predict)
-                # if rate in self.errors:
-                #     self.errors[rate].append(logloss)
-                # else:
-                #     self.errors[rate] = [logloss]
+                    predict = self.__predict_test(x_v, weights)
+                    logloss = self.logloss_crutch(y_v, predict)
+                    if rate in self.errors:
+                        self.errors[rate].append(logloss)
+                    else:
+                        self.errors[rate] = [logloss]
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -182,46 +182,37 @@ def plot_multiclass_roc(y_pred, y_true):
     plt.legend()
 
 
-if __name__ == "__main__":
-    # iris = datasets.load_iris()
-    # IRIS_X = iris.data
-    #
-    # lb = preprocessing.LabelBinarizer()
-    # IRIS_Y = [np.array([i]).transpose() for i in lb.fit_transform(iris.target)]
-    #
-    # a = Perceptron(4, 3, (3, 2), [0.01], 1000)
-    # iris_l, iris_v = slice_dataset_2to1(IRIS_X, IRIS_Y)
-    # a.train(iris_l['x'], iris_l['y'])
-    # # a.plot_losses()
-    # # a.plot_errors()
-    # result = a.predict(iris_v['x'])
-    # # print(result)
-    # # test = a.logloss_crutch(iris_v['y'], result)
-    #
-    # pred = lb.inverse_transform(np.array(result))
-    # true = lb.inverse_transform(iris_v['y']).transpose()[0]
-    # plot_multiclass_roc(result, lb.fit_transform(true))
-    # # plot_confusion_matrix(y_pred=pred, y_true=true, classes=iris.target_names)
-    #
-    # print(pred)
-    # print(true)
-    # plt.show()
-
-    digits = datasets.load_digits()
-    DIGITS_X = preprocessing.normalize(digits.data, norm='l2')
+def load_dataset(dataset, perceptron):
+    X = preprocessing.normalize(dataset.data, norm='l2')
     lb = preprocessing.LabelBinarizer()
-    DIGITS_Y = [np.array([i]).transpose() for i in lb.fit_transform(digits.target)]
+    Y = [np.array([i]).transpose() for i in lb.fit_transform(dataset.target)]
 
-    a = Perceptron(64, 10, (100, 76), [0.01, 0.005], 300000)
-    digits_l, digits_v = slice_dataset_2to1(DIGITS_X, DIGITS_Y)
-    print(digits_l['x'].shape)
-    a.train(digits_l['x'], digits_l['y'])
-    # a.plot_errors()
-    result = a.predict(digits_v['x'])
+    l, v = slice_dataset_2to1(X, Y)
+    perceptron.train(l['x'], l['y'])
+    # perceptron.plot_losses()
+    perceptron.plot_errors()
+    result = perceptron.predict(v['x'])
+    # print(result)
+    test = perceptron.logloss_crutch(v['y'], result)
+
     pred = lb.inverse_transform(np.array(result))
-    true = lb.inverse_transform(digits_v['y']).transpose()[0]
+    true = lb.inverse_transform(v['y']).transpose()[0]
+    plot_multiclass_roc(result, lb.fit_transform(true))
+    # plot_confusion_matrix(y_pred=pred, y_true=true, classes=dataset.target_names)
 
     print(pred)
     print(true)
-    # plot_multiclass_roc(result, lb.fit_transform(true))
     plt.show()
+
+
+if __name__ == "__main__":
+    # data = datasets.load_iris()
+    # data = datasets.load_digits()
+    # data = datasets.load_breast_cancer()
+    data = datasets.load_wine()
+    # a = Perceptron(4, 3, (5,), [0.05], 1000)  # iris success
+    # a = Perceptron(64, 10, (150,), [0.01, 0.005, 0.001, 0.1], 30000)  # digits success
+    # a = Perceptron(30, 2, (100,), [0.01, 0.005, 0.001, 0.1], 100)  # cancer
+    a = Perceptron(13, 3, (15,), [0.01, 0.001, 0.1], 10000)  # wine
+
+    load_dataset(data, a)
