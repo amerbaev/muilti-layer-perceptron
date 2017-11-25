@@ -6,7 +6,8 @@ import numpy as np
 from sklearn import datasets, preprocessing, metrics
 from tqdm import tqdm
 
-V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
+# V_SIGMOID = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
+V_SIGMOID = np.vectorize(lambda x: np.tanh(x))
 
 
 def slice_dataset_2to1(conditions, results):
@@ -69,12 +70,12 @@ class Perceptron:
                     error = (np.dot(weights[k].transpose(), error) * a_layer[k] * (1 - a_layer[k]))[:-1:]
                     weights[k - 1] = weights[k - 1] + np.dot(error, a_layer[k - 1].transpose()) * rate
 
-                # predict = self.__predict_test(x_v, weights)
-                # logloss = self.logloss_crutch(y_v, predict)
-                # if rate in self.errors:
-                #     self.errors[rate].append(logloss)
-                # else:
-                #     self.errors[rate] = [logloss]
+                    predict = self.__predict_test(x_v, weights)
+                    logloss = self.logloss_crutch(y_v, predict)
+                    if rate in self.errors:
+                        self.errors[rate].append(logloss)
+                    else:
+                        self.errors[rate] = [logloss]
 
             predict = self.__predict_test(x, weights)
             logloss = self.logloss_crutch(y, predict)
@@ -210,7 +211,7 @@ if __name__ == "__main__":
     # data = datasets.load_digits()
     # data = datasets.load_breast_cancer()
     # data = datasets.load_wine()
-    a = Perceptron(4, 3, (7,), [0.05], 50000)  # iris success
+    a = Perceptron(4, 3, (7,), [0.05], 5000)  # iris success
     # a = Perceptron(64, 10, (150,), [0.01, 0.005, 0.001, 0.1], 30000)  # digits success
     # a = Perceptron(30, 2, (100,), [0.01, 0.005, 0.001, 0.1], 100)  # cancer
     # a = Perceptron(13, 3, (15,), [0.01, 0.001, 0.1], 10000)  # wine
