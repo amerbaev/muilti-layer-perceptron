@@ -60,9 +60,7 @@ if __name__ == "__main__":
         print(y_test)
         print(model.loss_)
 
-
-        # TODO рисовать красивую кривую
         d = {'x': [i for i, x in enumerate(model.loss_curve_)], 'y': [x for x in model.loss_curve_]}
         dataFrame = pd.DataFrame(d)
-        sns.regplot(x="x", y="y", data=dataFrame, scatter_kws={"s": 10}, ci=None, truncate=False, fit_reg=False)
+        sns.regplot(x="x", y="y", data=dataFrame, scatter_kws={"s": 0}, order=14, ci=None, truncate=True)
         plt.show()
