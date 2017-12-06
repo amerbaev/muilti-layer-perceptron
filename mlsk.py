@@ -62,5 +62,5 @@ if __name__ == "__main__":
 
         d = {'x': [i for i, x in enumerate(model.loss_curve_)], 'y': [x for x in model.loss_curve_]}
         dataFrame = pd.DataFrame(d)
-        sns.regplot(x="x", y="y", data=dataFrame, scatter_kws={"s": 0}, order=14, ci=None, truncate=True)
+        sns.regplot(x="x", y="y", data=dataFrame, scatter_kws={"s": 0}, order=6, ci=None, truncate=True)
         plt.show()
